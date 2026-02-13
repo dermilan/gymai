@@ -17,7 +17,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _injuriesController = TextEditingController();
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
+  String _selectedPersona = 'Gym Bro';
   bool _obscureKey = true;
   String _status = '';
 
@@ -35,6 +37,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _injuriesController.text = prefs.injuries;
     _apiKeyController.text = prefs.apiKey;
     _modelController.text = prefs.model;
+    _nameController.text = prefs.preferredName;
+    _selectedPersona = prefs.persona;
     setState(() {});
   }
 
@@ -46,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _injuriesController.dispose();
     _apiKeyController.dispose();
     _modelController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -65,6 +70,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       model: _modelController.text.trim().isEmpty
           ? 'x-ai/grok-4.1-fast'
           : _modelController.text.trim(),
+      persona: _selectedPersona,
+      preferredName: _nameController.text.trim().isEmpty
+          ? 'Champ'
+          : _nameController.text.trim(),
     );
 
     await AppServices.store.savePrefs(prefs);
@@ -134,6 +143,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   labelText: 'Model',
                   prefixIcon: Icon(Icons.smart_toy_rounded, size: 20),
                   hintText: 'x-ai/grok-4.1-fast',
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedPersona,
+                decoration: const InputDecoration(
+                  labelText: 'AI Persona',
+                  prefixIcon: Icon(Icons.psychology_rounded, size: 20),
+                ),
+                items: [
+                  'Gym Bro',
+                  'Evidence-Based Scientist',
+                  'Old-School Drill Sergeant',
+                  'Supportive Zen Coach',
+                  'Data-Driven Strategist'
+                ].map((p) {
+                  return DropdownMenuItem(value: p, child: Text(p));
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedPersona = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'How should AI address you?',
+                  prefixIcon: Icon(Icons.badge_rounded, size: 20),
+                  hintText: 'Champ',
                 ),
               ),
             ],

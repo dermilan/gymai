@@ -3,6 +3,7 @@ import 'set_log.dart';
 class WorkoutLog {
   final String? id;
   final String name;
+  final String? summary;
   final DateTime date;
   final List<SetLog> sets;
   final int? durationMinutes;
@@ -10,6 +11,7 @@ class WorkoutLog {
   const WorkoutLog({
     this.id,
     required this.name,
+    this.summary,
     required this.date,
     required this.sets,
     this.durationMinutes,
@@ -23,9 +25,23 @@ class WorkoutLog {
           ? id!
           : '${date.microsecondsSinceEpoch}-$name';
 
+  factory WorkoutLog.fromJson(Map<String, dynamic> json) {
+    return WorkoutLog(
+      id: json['id'] as String?,
+      name: json['name'] as String,
+      summary: json['summary'] as String?,
+      date: DateTime.parse(json['date'] as String),
+      sets: (json['sets'] as List)
+          .map((e) => SetLog.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      durationMinutes: json['durationMinutes'] as int?,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        'summary': summary,
         'date': date.toIso8601String(),
         'sets': sets.map((set) => set.toJson()).toList(),
         'durationMinutes': durationMinutes,

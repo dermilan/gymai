@@ -1,9 +1,11 @@
 import '../models/set_log.dart';
 import '../models/user_prefs.dart';
 import '../models/workout_log.dart';
+import '../models/active_session.dart';
 import 'local_store.dart';
 
 class InMemoryStore implements LocalStore {
+  ActiveSession? _activeSession;
   final List<WorkoutLog> _workouts = [
     WorkoutLog(
       id: 'sample-push',
@@ -73,6 +75,19 @@ class InMemoryStore implements LocalStore {
   @override
   Future<void> savePrefs(UserPrefs prefs) async {
     _prefs = prefs;
+  }
+
+  @override
+  Future<ActiveSession?> fetchActiveSession() async => _activeSession;
+
+  @override
+  Future<void> saveActiveSession(ActiveSession session) async {
+    _activeSession = session;
+  }
+
+  @override
+  Future<void> clearActiveSession() async {
+    _activeSession = null;
   }
 
   WorkoutLog _ensureId(WorkoutLog log) {

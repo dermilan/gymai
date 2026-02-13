@@ -5,6 +5,8 @@ class UserPrefs {
   final String injuries;
   final String apiKey;
   final String model;
+  final String persona;
+  final String preferredName;
 
   const UserPrefs({
     required this.goal,
@@ -13,6 +15,8 @@ class UserPrefs {
     required this.injuries,
     this.apiKey = '',
     this.model = 'x-ai/grok-4.1-fast',
+    this.persona = 'Gym Bro',
+    this.preferredName = 'Champ',
   });
 
   factory UserPrefs.empty() {
@@ -21,6 +25,8 @@ class UserPrefs {
       daysPerWeek: 3,
       equipment: 'Full gym',
       injuries: 'None',
+      persona: 'Gym Bro',
+      preferredName: 'Champ',
     );
   }
 
@@ -33,6 +39,8 @@ class UserPrefs {
         'injuries': injuries,
         'apiKey': apiKey,
         'model': model,
+        'persona': persona,
+        'preferredName': preferredName,
       };
 
   factory UserPrefs.fromJson(Map<String, dynamic> json) {
@@ -43,6 +51,8 @@ class UserPrefs {
       injuries: (json['injuries'] ?? 'None').toString(),
       apiKey: (json['apiKey'] ?? '').toString(),
       model: (json['model'] ?? 'x-ai/grok-4.1-fast').toString(),
+      persona: (json['persona'] ?? 'Gym Bro').toString(),
+      preferredName: (json['preferredName'] ?? 'Champ').toString(),
     );
   }
 }

@@ -15,6 +15,7 @@ class EditWorkoutScreen extends StatefulWidget {
 
 class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
   late final TextEditingController _nameController;
+  late final TextEditingController _summaryController;
   late final TextEditingController _durationController;
   late DateTime _sessionDate;
   late List<_EditableSet> _sets;
@@ -23,6 +24,7 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.workout.name);
+    _summaryController = TextEditingController(text: widget.workout.summary ?? '');
     _durationController = TextEditingController(
       text: widget.workout.durationMinutes?.toString() ?? '',
     );
@@ -33,6 +35,7 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _summaryController.dispose();
     _durationController.dispose();
     for (final set in _sets) {
       set.dispose();
@@ -107,6 +110,7 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
     final updated = WorkoutLog(
       id: widget.workout.id ?? widget.workout.effectiveId,
       name: name,
+      summary: _summaryController.text.trim(),
       date: _sessionDate,
       sets: updatedSets,
       durationMinutes: duration,
@@ -172,6 +176,16 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
                     labelText: 'Workout name',
                     prefixIcon: Icon(Icons.label_rounded, size: 20),
                   ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _summaryController,
+                  decoration: const InputDecoration(
+                    labelText: 'Summary',
+                    prefixIcon: Icon(Icons.description_rounded, size: 20),
+                  ),
+                  maxLines: 2,
+                  minLines: 1,
                 ),
                 const SizedBox(height: 12),
                 Row(

@@ -5,7 +5,9 @@ import 'screens/ai_suggestions_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/log_workout_screen.dart';
+import 'screens/active_session_screen.dart';
 import 'screens/settings_screen.dart';
+import 'app_services.dart';
 
 void main() {
   runApp(const GymProgressApp());
@@ -129,25 +131,37 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    LogWorkoutScreen(),
-    HistoryScreen(),
-    AiSuggestionsScreen(),
-    SettingsScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: KeyedSubtree(
-          key: ValueKey(_index),
-          child: _screens[_index],
-        ),
+      body: IndexedStack(
+        index: _index,
+        children: [
+          const DashboardScreen(),
+          ValueListenableBuilder(
+            valueListenable: AppServices.workoutsRefresh,
+            builder: (context, _, __) {
+              return FutureBuilder(
+                future: AppServices.store.fetchActiveSession(),
+                builder: (context, snapshot) {
+                  final active = snapshot.data;
+                  if (active != null) {
+                    return ActiveSessionScreen(
+                      session: active,
+                      onCleared: () => setState(() {}),
+                    );
+                  }
+                  return const LogWorkoutScreen();
+                },
+              );
+            },
+          ),
+          const HistoryScreen(),
+          const AiSuggestionsScreen(),
+          const SettingsScreen(),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -177,8 +191,8 @@ class _HomeShellState extends State<HomeShell> {
               label: 'Dashboard',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.edit_note_rounded),
-              label: 'Log',
+              icon: Icon(Icons.fitness_center_rounded),
+              label: 'Active',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.history_rounded),

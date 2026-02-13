@@ -57,7 +57,7 @@ class HistoryScreen extends StatelessWidget {
                       itemCount: workouts.length,
                       itemBuilder: (context, index) {
                         final workout = workouts[index];
-                        final summary = _typeSummary(workout.sets);
+                        final summary = workout.summary ?? _typeSummary(workout.sets);
                         final dateStr = _formatDate(workout.date);
 
                         return Dismissible(
@@ -134,14 +134,27 @@ class HistoryScreen extends StatelessWidget {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          '$dateStr · ${workout.sets.length} sets'
-                                          '${summary.isEmpty ? '' : ' · $summary'}',
+                                          '$dateStr · ${workout.sets.length} sets',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.white
-                                                .withValues(alpha: 0.5),
+                                            color:
+                                                Colors.white.withValues(alpha: 0.5),
                                           ),
                                         ),
+                                        if (summary.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            summary,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.8),
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),

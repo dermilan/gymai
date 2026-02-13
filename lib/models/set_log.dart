@@ -38,6 +38,21 @@ class SetLog {
 
   double get volume => reps * weight;
 
+  factory SetLog.fromJson(Map<String, dynamic> json) {
+    return SetLog(
+      exerciseName: json['exerciseName'] as String,
+      reps: json['reps'] as int,
+      weight: (json['weight'] as num).toDouble(),
+      rpe: (json['rpe'] as num?)?.toDouble(),
+      notes: json['notes'] as String? ?? '',
+      type: ExerciseType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => ExerciseType.strength,
+      ),
+      durationMinutes: json['durationMinutes'] as int?,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'exerciseName': exerciseName,
         'reps': reps,

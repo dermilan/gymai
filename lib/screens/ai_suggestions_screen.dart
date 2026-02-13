@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_services.dart';
+import '../models/active_session.dart';
 
 class AiSuggestionsScreen extends StatefulWidget {
   const AiSuggestionsScreen({super.key});
@@ -13,6 +16,120 @@ class _AiSuggestionsScreenState extends State<AiSuggestionsScreen> {
   bool _loading = false;
   String _result = '';
   bool _hasResult = false;
+  Map<String, dynamic>? _lastJson;
+
+  Future<void> _copy() async {
+    if (_result.isNotEmpty) {
+      String textToCopy = _result;
+      if (_lastJson != null) {
+        final name = _lastJson!['name']?.toString() ?? 'Workout Plan';
+        final summary = _lastJson!['summary']?.toString() ?? '';
+        final exercises = _lastJson!['exercises'] as List? ?? [];
+
+        final buffer = StringBuffer();
+        buffer.writeln(name);
+        if (summary.isNotEmpty) buffer.writeln(summary);
+        buffer.writeln();
+        for (final e in exercises) {
+          final data = e as Map<String, dynamic>;
+          buffer.writeln(
+              '- ${data['exerciseName']}: ${data['sets']}x${data['reps']} @ ${data['weight']}kg');
+        }
+        textToCopy = buffer.toString();
+      }
+
+      try {
+        await Clipboard.setData(ClipboardData(text: textToCopy));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Copied to clipboard')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          _showCopyFallback(textToCopy);
+        }
+      }
+    }
+  }
+
+  void _showCopyFallback(String text) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Copy Manually'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your browser blocked automatic copying (common on non-secure IP connections). Please select and copy the text below:',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SelectableText(
+                text,
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('DONE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _accept() async {
+    if (_lastJson == null) return;
+
+    try {
+      final exercises = (_lastJson!['exercises'] as List? ?? []).map((e) {
+        final data = e as Map<String, dynamic>;
+        final sets = data['sets'] as int? ?? 1;
+        return ActiveExercise(
+          exerciseName: data['exerciseName']?.toString() ?? 'Exercise',
+          sets: sets,
+          reps: data['reps'] as int? ?? 10,
+          weight: (data['weight'] as num? ?? 0).toDouble(),
+          completed: List.generate(sets, (_) => false),
+          notes: data['notes']?.toString(),
+        );
+      }).toList();
+
+      final session = ActiveSession(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: _lastJson!['name']?.toString() ?? 'Gym Session',
+        summary: _lastJson!['summary']?.toString(),
+        date: DateTime.now(),
+        exercises: exercises,
+      );
+
+      await AppServices.store.saveActiveSession(session);
+      AppServices.workoutsRefresh.value += 1; // Trigger UI refresh
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Plan accepted! Check the "Active" tab.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to parse plan for tracker: $e')),
+      );
+    }
+  }
 
   Future<void> _generate() async {
     setState(() {
@@ -41,6 +158,16 @@ class _AiSuggestionsScreenState extends State<AiSuggestionsScreen> {
       setState(() {
         _result = plan;
         _hasResult = true;
+        try {
+          // Try to parse JSON for the "Accept" flow
+          final start = plan.indexOf('{');
+          final end = plan.lastIndexOf('}');
+          if (start != -1 && end != -1) {
+            _lastJson = jsonDecode(plan.substring(start, end + 1)) as Map<String, dynamic>;
+          }
+        } catch (_) {
+          _lastJson = null;
+        }
       });
     } catch (error) {
       setState(() {
@@ -151,7 +278,6 @@ class _AiSuggestionsScreenState extends State<AiSuggestionsScreen> {
                 ),
               ),
 
-            if (_hasResult)
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -163,24 +289,134 @@ class _AiSuggestionsScreenState extends State<AiSuggestionsScreen> {
                       color: Colors.white.withValues(alpha: 0.06),
                     ),
                   ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      _result,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: _result.contains('Failed') ||
-                                _result.contains('Set your')
-                            ? Colors.red.shade300
-                            : Colors.white.withValues(alpha: 0.85),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: _lastJson != null
+                              ? _buildPlanPreview()
+                              : Text(
+                                  _result,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    height: 1.6,
+                                    color: _result.contains('Failed') ||
+                                            _result.contains('Set your')
+                                        ? Colors.red.shade300
+                                        : Colors.white.withValues(alpha: 0.85),
+                                  ),
+                                ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          if (_result.trim().isNotEmpty)
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _copy,
+                                icon: const Icon(Icons.copy_rounded, size: 18),
+                                label: const Text('Copy Text'),
+                              ),
+                            ),
+                          if (_lastJson != null) ...[
+                            if (_result.trim().isNotEmpty) const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _accept,
+                                icon: const Icon(Icons.check_circle_rounded, size: 18),
+                                label: const Text('Accept Plan'),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
           ],
         ),
       ),
+    );
+  }
+  Widget _buildPlanPreview() {
+    final name = _lastJson!['name']?.toString() ?? 'Suggested Workout';
+    final summary = _lastJson!['summary']?.toString() ?? '';
+    final exercises = _lastJson!['exercises'] as List? ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          name,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        if (summary.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            summary,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.6),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Divider(color: Colors.white10),
+        ),
+        ...exercises.map((e) {
+          final data = e as Map<String, dynamic>;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.fitness_center_rounded,
+                    size: 16,
+                    color: Color(0xFF7C4DFF),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data['exerciseName']?.toString() ?? 'Exercise',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        '${data['sets']} sets × ${data['reps']} reps @ ${data['weight']}kg',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 }

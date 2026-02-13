@@ -1,9 +1,26 @@
 import '../models/user_prefs.dart';
 import '../models/workout_log.dart';
 
+String _getPersonaPrompt(UserPrefs prefs) {
+  final name = prefs.preferredName;
+  switch (prefs.persona) {
+    case 'Evidence-Based Scientist':
+      return 'You are an Evidence-Based Fitness Scientist. Address the user as $name. Use clinical, technical language (e.g., hypertrophy, motor unit recruitment, systemic fatigue). Focus on data and physiological optimization. Your tone is formal and academic.';
+    case 'Old-School Drill Sergeant':
+      return 'You are a no-nonsense Old-School Drill Sergeant. Address the user as $name. Your tone is aggressive, demanding, and high-intensity. Use tough love and focus on discipline and grit. No excuses.';
+    case 'Supportive Zen Coach':
+      return 'You are a Supportive Zen Fitness Coach. Address the user as $name. Your tone is calm, encouraging, and focused on mindfulness, longevity, and listening to the body. Emphasize recovery and consistency.';
+    case 'Data-Driven Strategist':
+      return 'You are a Data-Driven Fitness Strategist. Address the user as $name. Your tone is cold, analytical, and strictly objective. Focus on efficiency, trend lines, and optimal throughput.';
+    case 'Gym Bro':
+    default:
+      return 'You are a high-energy "Gym Bro." Address the user as $name. Use slang like "brah," "gainz," "beast mode," "swol," and "crushing it." Your tone is extremely casual and hyped.';
+  }
+}
+
 String buildWorkoutPlanPrompt(UserPrefs prefs, List<WorkoutLog> recentWorkouts) {
   final buffer = StringBuffer();
-  buffer.writeln('You are a fitness coach.');
+  buffer.writeln(_getPersonaPrompt(prefs));
   buffer.writeln('Goal: ${prefs.goal}.');
   buffer.writeln('Days per week: ${prefs.daysPerWeek}.');
   buffer.writeln('Equipment: ${prefs.equipment}.');
@@ -18,15 +35,21 @@ String buildWorkoutPlanPrompt(UserPrefs prefs, List<WorkoutLog> recentWorkouts) 
     }
   }
 
-  buffer.writeln('Return a next workout with sets, reps, and brief rationale.');
+  buffer.writeln('\nReturn a next workout as a JSON object.');
+  buffer.writeln('Include fields: name, summary, exercises.');
+  buffer.writeln('Each exercise must have: exerciseName, sets (int), reps (int), weight (num), type ("strength" or "cardio"), durationMinutes (int), notes.');
+  buffer.writeln('Return ONLY the raw JSON object.');
   return buffer.toString();
 }
 
-String buildParseWorkoutNotesPrompt(String notes) {
+String buildParseWorkoutNotesPrompt(UserPrefs prefs, String notes) {
   return [
-    'You are a parser for gym workout notes.',
-    'Return ONLY valid JSON as an object with fields: sessionDate, sets.',
+    _getPersonaPrompt(prefs),
+    'You are also a parser for gym workout notes.',
+    'Return ONLY valid JSON as an object with fields: sessionDate, name, summary, sets.',
     'sessionDate must be an ISO 8601 string or null if missing.',
+    'name must be a short, punchy title written in your specific persona style.',
+    'summary must be a one-sentence summary of the focus, written in your specific persona style.',
     'sets must be an array of objects.',
     'Each set object must include: exerciseName, sets, reps, weight, notes, type, durationMinutes.',
     'type must be either "strength" or "cardio".',

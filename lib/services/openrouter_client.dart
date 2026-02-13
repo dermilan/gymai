@@ -34,19 +34,27 @@ class OpenRouterClient {
 
     if (!_isConfigured) {
       await Future<void>.delayed(const Duration(milliseconds: 600));
-      return 'Example plan based on prompt:\n\n$prompt\n\n- Squat 4x6\n- Bench 4x8\n- Row 3x10\n- Lunges 3x12\n- Plank 3x45s';
+      // Mocked JSON-ish response for non-configured users
+      return jsonEncode({
+        'name': 'Sample Workout',
+        'summary': 'A solid full body session.',
+        'exercises': [
+          {'exerciseName': 'Squat', 'sets': 4, 'reps': 6, 'weight': 60, 'type': 'strength'},
+          {'exerciseName': 'Bench', 'sets': 4, 'reps': 8, 'weight': 40, 'type': 'strength'},
+        ],
+      });
     }
 
     final content = await _chatCompletion(prompt);
     return content.trim();
   }
 
-  Future<ParsedWorkout> parseWorkoutNotes(String notes) async {
+  Future<ParsedWorkout> parseWorkoutNotes(UserPrefs prefs, String notes) async {
     if (!_isConfigured) {
       throw StateError('OpenRouter is not configured yet.');
     }
 
-    final prompt = buildParseWorkoutNotesPrompt(notes);
+    final prompt = buildParseWorkoutNotesPrompt(prefs, notes);
     final content = await _chatCompletion(prompt);
     final jsonText = _extractJsonObject(content);
     final data = jsonDecode(jsonText) as Map<String, dynamic>;

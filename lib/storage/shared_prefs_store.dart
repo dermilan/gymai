@@ -5,11 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/set_log.dart';
 import '../models/user_prefs.dart';
 import '../models/workout_log.dart';
+import '../models/active_session.dart';
 import 'local_store.dart';
 
 class SharedPrefsStore implements LocalStore {
   static const _workoutsKey = 'workouts_json';
   static const _prefsKey = 'user_prefs_json';
+  static const _activeSessionKey = 'active_session_json';
 
   @override
   Future<List<WorkoutLog>> fetchWorkouts() async {
@@ -86,6 +88,30 @@ class SharedPrefsStore implements LocalStore {
     await sp.setString(_prefsKey, jsonEncode(prefs.toJson()));
   }
 
+  @override
+  Future<ActiveSession?> fetchActiveSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_activeSessionKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return ActiveSession.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> saveActiveSession(ActiveSession session) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_activeSessionKey, jsonEncode(session.toJson()));
+  }
+
+  @override
+  Future<void> clearActiveSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_activeSessionKey);
+  }
+
   // -- helpers ---------------------------------------------------------------
 
   Future<void> _persistWorkouts(List<WorkoutLog> workouts) async {
@@ -105,6 +131,7 @@ class SharedPrefsStore implements LocalStore {
     return WorkoutLog(
       id: id,
       name: log.name,
+      summary: log.summary,
       date: log.date,
       sets: log.sets,
       durationMinutes: log.durationMinutes,
@@ -134,6 +161,7 @@ class SharedPrefsStore implements LocalStore {
     return WorkoutLog(
       id: json['id']?.toString(),
       name: (json['name'] ?? 'Workout').toString(),
+      summary: json['summary']?.toString(),
       date: DateTime.tryParse((json['date'] ?? '').toString()) ??
           DateTime.now(),
       sets: sets,

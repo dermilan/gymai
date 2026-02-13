@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
+import '../models/parsed_workout.dart';
 import '../models/parsed_set.dart';
 import '../models/set_log.dart';
 import '../models/workout_log.dart';
@@ -15,6 +16,7 @@ class LogWorkoutScreen extends StatefulWidget {
 class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
   final TextEditingController _pasteController = TextEditingController();
   List<SetLog> _parsedSets = [];
+  ParsedWorkout? _lastParsedWorkout;
   String _status = '';
   bool _loading = false;
   DateTime _sessionDate = DateTime.now();
@@ -48,14 +50,15 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
       }
 
       final client = AppServices.createAiClient(prefs);
-      final parsed = await client.parseWorkoutNotes(input);
+      final parsed = await client.parseWorkoutNotes(prefs, input);
       final sets = _expandParsedSets(parsed.sets);
       setState(() {
         _parsedSets = sets;
+        _lastParsedWorkout = parsed;
         if (parsed.sessionDate != null) {
           _sessionDate = parsed.sessionDate!;
         }
-        _status = 'Parsed ${sets.length} set entries.';
+        _status = 'Parsed "${parsed.name}"\n${parsed.summary ?? "No summary"}';
       });
     } catch (error) {
       setState(() {
@@ -93,7 +96,8 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
 
     final log = WorkoutLog(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
-      name: 'Quick Log',
+      name: _lastParsedWorkout?.name ?? 'Quick Log',
+      summary: _lastParsedWorkout?.summary,
       date: _sessionDate,
       sets: _parsedSets,
       durationMinutes: null,
@@ -142,11 +146,12 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Log Workout')),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // --- input card ---
             Container(
               padding: const EdgeInsets.all(16),
@@ -264,9 +269,10 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
             const SizedBox(height: 4),
 
             // --- parsed sets list ---
-            Expanded(
-              child: _parsedSets.isEmpty
-                  ? Center(
+            _parsedSets.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -284,10 +290,13 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
                           ),
                         ],
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: _parsedSets.length,
-                      itemBuilder: (context, index) {
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _parsedSets.length,
+                    itemBuilder: (context, index) {
                         final set = _parsedSets[index];
                         return AnimatedContainer(
                           duration: Duration(milliseconds: 300 + index * 50),
@@ -355,8 +364,8 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
                         );
                       },
                     ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

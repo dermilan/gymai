@@ -2,10 +2,14 @@ import 'parsed_set.dart';
 
 class ParsedWorkout {
   final DateTime? sessionDate;
+  final String? name;
+  final String? summary;
   final List<ParsedSet> sets;
 
   const ParsedWorkout({
     required this.sessionDate,
+    this.name,
+    this.summary,
     required this.sets,
   });
 
@@ -16,12 +20,11 @@ class ParsedWorkout {
       parsedDate = DateTime.tryParse(rawDate.trim());
     }
 
-    final rawSets = json['sets'];
-    final list = rawSets is List ? rawSets : const [];
-
     return ParsedWorkout(
       sessionDate: parsedDate,
-      sets: list
+      name: json['name'] as String?,
+      summary: json['summary'] as String?,
+      sets: (json['sets'] as List? ?? [])
           .whereType<Map<String, dynamic>>()
           .map(ParsedSet.fromJson)
           .toList(),
