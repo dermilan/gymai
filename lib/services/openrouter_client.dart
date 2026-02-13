@@ -6,6 +6,7 @@ import '../models/parsed_workout.dart';
 import '../models/user_prefs.dart';
 import '../models/workout_log.dart';
 import 'prompt_templates.dart';
+import 'rate_limiter.dart';
 
 class OpenRouterClient {
   final String apiKey;
@@ -13,6 +14,11 @@ class OpenRouterClient {
   final String baseUrl;
   final String? referer;
   final String? title;
+  final RateLimiter? rateLimiter;
+
+  static const int _maxPromptChars = 8000;
+  static const int _maxNotesChars = 4000;
+  static const int _maxFeedbackChars = 800;
 
   const OpenRouterClient({
     required this.apiKey,
@@ -20,6 +26,7 @@ class OpenRouterClient {
     this.baseUrl = 'https://openrouter.ai/api/v1/chat/completions',
     this.referer,
     this.title,
+    this.rateLimiter,
   });
 
   bool get _isConfigured {
@@ -31,6 +38,7 @@ class OpenRouterClient {
     required List<WorkoutLog> recentWorkouts,
   }) async {
     final prompt = buildWorkoutPlanPrompt(prefs, recentWorkouts);
+    _ensurePromptLength(prompt);
 
     if (!_isConfigured) {
       await Future<void>.delayed(const Duration(milliseconds: 600));
@@ -55,7 +63,9 @@ class OpenRouterClient {
     required Map<String, dynamic> planJson,
     required String feedback,
   }) async {
+    _ensureInputLength('Feedback', feedback, _maxFeedbackChars);
     final prompt = buildPlanRefinementPrompt(prefs, planJson, feedback);
+    _ensurePromptLength(prompt);
 
     if (!_isConfigured) {
       final updated = Map<String, dynamic>.from(planJson);
@@ -75,6 +85,8 @@ class OpenRouterClient {
       throw StateError('OpenRouter is not configured yet.');
     }
 
+    _ensureInputLength('Notes', notes, _maxNotesChars);
+
     final prompt = buildParseWorkoutNotesPrompt(prefs, notes);
     final content = await _chatCompletion(prompt);
     final jsonText = _extractJsonObject(content);
@@ -88,6 +100,7 @@ class OpenRouterClient {
     WorkoutLog? previous,
   }) async {
     final prompt = buildSessionCommentPrompt(prefs, current, previous);
+    _ensurePromptLength(prompt);
 
     if (!_isConfigured) {
       return '';
@@ -98,6 +111,7 @@ class OpenRouterClient {
   }
 
   Future<String> _chatCompletion(String prompt) async {
+    rateLimiter?.check();
     final uri = Uri.parse(baseUrl);
 
     final headers = <String, String>{
@@ -147,6 +161,21 @@ class OpenRouterClient {
     final message = choices.first as Map<String, dynamic>;
     final content = (message['message'] as Map<String, dynamic>?)?['content'];
     return content?.toString() ?? '';
+  }
+
+  void _ensurePromptLength(String prompt) {
+    if (prompt.length > _maxPromptChars) {
+      throw StateError('Prompt too long. Reduce input size and try again.');
+    }
+  }
+
+  void _ensureInputLength(String label, String value, int maxChars) {
+    if (value.trim().isEmpty) {
+      throw StateError('$label is empty.');
+    }
+    if (value.length > maxChars) {
+      throw StateError('$label too long. Max $maxChars chars.');
+    }
   }
 
   String _extractJsonObject(String content) {
