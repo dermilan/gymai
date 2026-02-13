@@ -27,6 +27,14 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     _session = widget.session;
   }
 
+  @override
+  void didUpdateWidget(covariant ActiveSessionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.session.id != widget.session.id) {
+      setState(() => _session = widget.session);
+    }
+  }
+
   void _toggleSet(int exerciseIndex, int setIndex) {
     setState(() {
       final updatedExercises = List<ActiveExercise>.from(_session.exercises);
@@ -75,12 +83,44 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
       return;
     }
 
+    final prefs = await AppServices.store.fetchPrefs();
+    final previousWorkouts = await AppServices.store.fetchWorkouts();
+    final previous = previousWorkouts.isNotEmpty
+        ? previousWorkouts.first
+        : null;
+
+    String? aiComment;
+    if (prefs.hasApiKey) {
+      try {
+        final client = AppServices.createAiClient(prefs);
+        final comment = await client.generateSessionComment(
+          prefs: prefs,
+          current: WorkoutLog(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            name: _session.name,
+            summary: _session.summary,
+            date: DateTime.now(),
+            sets: sets,
+            durationMinutes: _session.durationMinutes,
+          ),
+          previous: previous,
+        );
+        if (comment.isNotEmpty) {
+          aiComment = comment;
+        }
+      } catch (_) {
+        aiComment = null;
+      }
+    }
+
     final log = WorkoutLog(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: _session.name,
       summary: _session.summary,
+      aiComment: aiComment,
       date: DateTime.now(),
       sets: sets,
+      durationMinutes: _session.durationMinutes,
     );
 
     await AppServices.store.saveWorkout(log);

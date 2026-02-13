@@ -4,6 +4,7 @@ class ActiveSession {
   final String id;
   final String name;
   final String? summary;
+  final int? durationMinutes;
   final DateTime date;
   final List<ActiveExercise> exercises;
 
@@ -11,6 +12,7 @@ class ActiveSession {
     required this.id,
     required this.name,
     this.summary,
+    this.durationMinutes,
     required this.date,
     required this.exercises,
   });
@@ -20,6 +22,7 @@ class ActiveSession {
       id: json['id'] as String,
       name: json['name'] as String,
       summary: json['summary'] as String?,
+      durationMinutes: json['durationMinutes'] as int?,
       date: DateTime.parse(json['date'] as String),
       exercises: (json['exercises'] as List)
           .map((e) => ActiveExercise.fromJson(e as Map<String, dynamic>))
@@ -31,6 +34,7 @@ class ActiveSession {
         'id': id,
         'name': name,
         'summary': summary,
+        'durationMinutes': durationMinutes,
         'date': date.toIso8601String(),
         'exercises': exercises.map((e) => e.toJson()).toList(),
       };
@@ -40,6 +44,7 @@ class ActiveSession {
       id: id,
       name: name,
       summary: summary,
+      durationMinutes: durationMinutes,
       date: date,
       exercises: exercises ?? this.exercises,
     );

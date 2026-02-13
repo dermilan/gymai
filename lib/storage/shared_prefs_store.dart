@@ -132,6 +132,7 @@ class SharedPrefsStore implements LocalStore {
       id: id,
       name: log.name,
       summary: log.summary,
+      aiComment: log.aiComment,
       date: log.date,
       sets: log.sets,
       durationMinutes: log.durationMinutes,
@@ -162,6 +163,7 @@ class SharedPrefsStore implements LocalStore {
       id: json['id']?.toString(),
       name: (json['name'] ?? 'Workout').toString(),
       summary: json['summary']?.toString(),
+      aiComment: json['aiComment']?.toString(),
       date: DateTime.tryParse((json['date'] ?? '').toString()) ??
           DateTime.now(),
       sets: sets,

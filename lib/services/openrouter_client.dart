@@ -38,11 +38,32 @@ class OpenRouterClient {
       return jsonEncode({
         'name': 'Sample Workout',
         'summary': 'A solid full body session.',
+        'durationMinutes': 55,
         'exercises': [
           {'exerciseName': 'Squat', 'sets': 4, 'reps': 6, 'weight': 60, 'type': 'strength'},
           {'exerciseName': 'Bench', 'sets': 4, 'reps': 8, 'weight': 40, 'type': 'strength'},
         ],
       });
+    }
+
+    final content = await _chatCompletion(prompt);
+    return content.trim();
+  }
+
+  Future<String> refineWorkoutPlan({
+    required UserPrefs prefs,
+    required Map<String, dynamic> planJson,
+    required String feedback,
+  }) async {
+    final prompt = buildPlanRefinementPrompt(prefs, planJson, feedback);
+
+    if (!_isConfigured) {
+      final updated = Map<String, dynamic>.from(planJson);
+      final existingSummary = updated['summary']?.toString() ?? '';
+      updated['summary'] = existingSummary.isEmpty
+          ? 'Refined plan based on your feedback.'
+          : '$existingSummary (Refined)';
+      return jsonEncode(updated);
     }
 
     final content = await _chatCompletion(prompt);
@@ -59,6 +80,21 @@ class OpenRouterClient {
     final jsonText = _extractJsonObject(content);
     final data = jsonDecode(jsonText) as Map<String, dynamic>;
     return ParsedWorkout.fromJson(data);
+  }
+
+  Future<String> generateSessionComment({
+    required UserPrefs prefs,
+    required WorkoutLog current,
+    WorkoutLog? previous,
+  }) async {
+    final prompt = buildSessionCommentPrompt(prefs, current, previous);
+
+    if (!_isConfigured) {
+      return '';
+    }
+
+    final content = await _chatCompletion(prompt);
+    return content.trim();
   }
 
   Future<String> _chatCompletion(String prompt) async {

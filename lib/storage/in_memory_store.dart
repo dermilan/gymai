@@ -101,6 +101,8 @@ class InMemoryStore implements LocalStore {
     return WorkoutLog(
       id: id,
       name: log.name,
+      summary: log.summary,
+      aiComment: log.aiComment,
       date: log.date,
       sets: log.sets,
       durationMinutes: log.durationMinutes,

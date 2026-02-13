@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
+import '../models/user_prefs.dart';
 import '../models/workout_log.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -14,13 +15,21 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: AppServices.workoutsRefresh,
-      builder: (context, _, __) {
-        return FutureBuilder<List<WorkoutLog>>(
-          future: AppServices.store.fetchWorkouts(),
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        AppServices.workoutsRefresh,
+        AppServices.prefsRefresh,
+      ]),
+      builder: (context, _) {
+        return FutureBuilder<_DashboardData>(
+          future: _loadDashboardData(),
           builder: (context, snapshot) {
-            final workouts = snapshot.data ?? [];
+            final workouts = snapshot.data?.workouts ?? [];
+            final prefs = snapshot.data?.prefs;
+            final preferredName = prefs?.preferredName.trim() ?? '';
+            final nameLabel = preferredName.isNotEmpty
+                ? preferredName
+                : 'there';
             final latest = workouts.isNotEmpty ? workouts.first : null;
 
             // --- weekly stats ---
@@ -86,8 +95,8 @@ class DashboardScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Welcome back 💪',
+                        Text(
+                          'Welcome back, $nameLabel 💪',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
@@ -219,6 +228,18 @@ class DashboardScreen extends StatelessWidget {
       },
     );
   }
+
+  static Future<_DashboardData> _loadDashboardData() async {
+    final results = await Future.wait([
+      AppServices.store.fetchWorkouts(),
+      AppServices.store.fetchPrefs(),
+    ]);
+
+    return _DashboardData(
+      workouts: results[0] as List<WorkoutLog>,
+      prefs: results[1] as UserPrefs,
+    );
+  }
 }
 
 class _StatCard extends StatelessWidget {
@@ -278,4 +299,14 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DashboardData {
+  final List<WorkoutLog> workouts;
+  final UserPrefs prefs;
+
+  const _DashboardData({
+    required this.workouts,
+    required this.prefs,
+  });
 }

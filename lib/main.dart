@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/ai_suggestions_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/history_screen.dart';
-import 'screens/log_workout_screen.dart';
 import 'screens/active_session_screen.dart';
 import 'screens/settings_screen.dart';
 import 'app_services.dart';
@@ -153,7 +152,9 @@ class _HomeShellState extends State<HomeShell> {
                       onCleared: () => setState(() {}),
                     );
                   }
-                  return const LogWorkoutScreen();
+                  return _NoActiveSession(
+                    onPlanPressed: () => setState(() => _index = 3),
+                  );
                 },
               );
             },
@@ -205,6 +206,54 @@ class _HomeShellState extends State<HomeShell> {
             BottomNavigationBarItem(
               icon: Icon(Icons.settings_rounded),
               label: 'Settings',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoActiveSession extends StatelessWidget {
+  final VoidCallback onPlanPressed;
+
+  const _NoActiveSession({required this.onPlanPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.fitness_center_rounded,
+              size: 56,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No active session',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Generate a plan with AI to start your workout tracker.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: onPlanPressed,
+              icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+              label: const Text('Go to AI Planner'),
             ),
           ],
         ),

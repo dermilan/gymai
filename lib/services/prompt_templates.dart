@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/user_prefs.dart';
 import '../models/workout_log.dart';
 
@@ -14,7 +16,7 @@ String _getPersonaPrompt(UserPrefs prefs) {
       return 'You are a Data-Driven Fitness Strategist. Address the user as $name. Your tone is cold, analytical, and strictly objective. Focus on efficiency, trend lines, and optimal throughput.';
     case 'Gym Bro':
     default:
-      return 'You are a high-energy "Gym Bro." Address the user as $name. Use slang like "brah," "gainz," "beast mode," "swol," and "crushing it." Your tone is extremely casual and hyped.';
+      return 'You are a high-energy "Gym Bro." Address the user as $name. Use gym bro slang. Your tone is extremely casual and hyped.';
   }
 }
 
@@ -23,6 +25,9 @@ String buildWorkoutPlanPrompt(UserPrefs prefs, List<WorkoutLog> recentWorkouts) 
   buffer.writeln(_getPersonaPrompt(prefs));
   buffer.writeln('Goal: ${prefs.goal}.');
   buffer.writeln('Days per week: ${prefs.daysPerWeek}.');
+  buffer.writeln('Session duration (minutes): ${prefs.sessionDurationMinutes}.');
+  buffer.writeln('Include warm-up: ${prefs.includeWarmUp ? "yes" : "no"}.');
+  buffer.writeln('Include cool down: ${prefs.includeCoolDown ? "yes" : "no"}.');
   buffer.writeln('Equipment: ${prefs.equipment}.');
   buffer.writeln('Injuries: ${prefs.injuries}.');
   buffer.writeln('Recent workouts:');
@@ -36,9 +41,74 @@ String buildWorkoutPlanPrompt(UserPrefs prefs, List<WorkoutLog> recentWorkouts) 
   }
 
   buffer.writeln('\nReturn a next workout as a JSON object.');
-  buffer.writeln('Include fields: name, summary, exercises.');
+  buffer.writeln('Include fields: name, summary, durationMinutes, exercises.');
   buffer.writeln('Each exercise must have: exerciseName, sets (int), reps (int), weight (num), type ("strength" or "cardio"), durationMinutes (int), notes.');
   buffer.writeln('Return ONLY the raw JSON object.');
+  return buffer.toString();
+}
+
+String buildPlanRefinementPrompt(
+  UserPrefs prefs,
+  Map<String, dynamic> planJson,
+  String feedback,
+) {
+  final buffer = StringBuffer();
+  buffer.writeln(_getPersonaPrompt(prefs));
+  buffer.writeln('Goal: ${prefs.goal}.');
+  buffer.writeln('Days per week: ${prefs.daysPerWeek}.');
+  buffer.writeln('Session duration (minutes): ${prefs.sessionDurationMinutes}.');
+  buffer.writeln('Include warm-up: ${prefs.includeWarmUp ? "yes" : "no"}.');
+  buffer.writeln('Include cool down: ${prefs.includeCoolDown ? "yes" : "no"}.');
+  buffer.writeln('Equipment: ${prefs.equipment}.');
+  buffer.writeln('Injuries: ${prefs.injuries}.');
+  buffer.writeln('Current plan JSON:');
+  buffer.writeln(jsonEncode(planJson));
+  buffer.writeln('User feedback to refine the plan:');
+  buffer.writeln(feedback);
+  buffer.writeln('\nReturn an updated workout as a JSON object.');
+  buffer.writeln('Include fields: name, summary, durationMinutes, exercises.');
+  buffer.writeln('Each exercise must have: exerciseName, sets (int), reps (int), weight (num), type ("strength" or "cardio"), durationMinutes (int), notes.');
+  buffer.writeln('Return ONLY the raw JSON object.');
+  return buffer.toString();
+}
+
+String buildSessionCommentPrompt(
+  UserPrefs prefs,
+  WorkoutLog current,
+  WorkoutLog? previous,
+) {
+  final buffer = StringBuffer();
+  buffer.writeln(_getPersonaPrompt(prefs));
+  buffer.writeln('Write a short comment about the completed session.');
+  buffer.writeln('Keep it to 1-2 sentences, in persona voice.');
+  buffer.writeln('Mention any notable comparison with the previous session if relevant.');
+  buffer.writeln('Current session:');
+  buffer.writeln('Name: ${current.name}.');
+  if (current.summary != null && current.summary!.isNotEmpty) {
+    buffer.writeln('Summary: ${current.summary}.');
+  }
+  buffer.writeln('Duration: ${current.durationMinutes ?? 0} minutes.');
+  buffer.writeln('Sets:');
+  for (final set in current.sets.take(10)) {
+    buffer.writeln(
+        '- ${set.exerciseName}: ${set.reps} reps @ ${set.weight} (${set.type.name})');
+  }
+  if (previous != null) {
+    buffer.writeln('Previous session:');
+    buffer.writeln('Name: ${previous.name}.');
+    if (previous.summary != null && previous.summary!.isNotEmpty) {
+      buffer.writeln('Summary: ${previous.summary}.');
+    }
+    buffer.writeln('Duration: ${previous.durationMinutes ?? 0} minutes.');
+    buffer.writeln('Sets:');
+    for (final set in previous.sets.take(6)) {
+      buffer.writeln(
+          '- ${set.exerciseName}: ${set.reps} reps @ ${set.weight} (${set.type.name})');
+    }
+  } else {
+    buffer.writeln('Previous session: none.');
+  }
+  buffer.writeln('Return ONLY the comment text.');
   return buffer.toString();
 }
 

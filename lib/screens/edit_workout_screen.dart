@@ -16,6 +16,7 @@ class EditWorkoutScreen extends StatefulWidget {
 class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _summaryController;
+  late final TextEditingController _aiCommentController;
   late final TextEditingController _durationController;
   late DateTime _sessionDate;
   late List<_EditableSet> _sets;
@@ -25,6 +26,8 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.workout.name);
     _summaryController = TextEditingController(text: widget.workout.summary ?? '');
+    _aiCommentController =
+        TextEditingController(text: widget.workout.aiComment ?? '');
     _durationController = TextEditingController(
       text: widget.workout.durationMinutes?.toString() ?? '',
     );
@@ -36,6 +39,7 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
   void dispose() {
     _nameController.dispose();
     _summaryController.dispose();
+    _aiCommentController.dispose();
     _durationController.dispose();
     for (final set in _sets) {
       set.dispose();
@@ -111,6 +115,7 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
       id: widget.workout.id ?? widget.workout.effectiveId,
       name: name,
       summary: _summaryController.text.trim(),
+      aiComment: _aiCommentController.text.trim(),
       date: _sessionDate,
       sets: updatedSets,
       durationMinutes: duration,
@@ -186,6 +191,17 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
                   ),
                   maxLines: 2,
                   minLines: 1,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _aiCommentController,
+                  decoration: const InputDecoration(
+                    labelText: 'AI Comment',
+                    prefixIcon: Icon(Icons.chat_bubble_rounded, size: 20),
+                  ),
+                  maxLines: 3,
+                  minLines: 1,
+                  readOnly: true,
                 ),
                 const SizedBox(height: 12),
                 Row(

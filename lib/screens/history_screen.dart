@@ -57,7 +57,7 @@ class HistoryScreen extends StatelessWidget {
                       itemCount: workouts.length,
                       itemBuilder: (context, index) {
                         final workout = workouts[index];
-                        final summary = workout.summary ?? _typeSummary(workout.sets);
+                        final aiComment = workout.aiComment ?? '';
                         final dateStr = _formatDate(workout.date);
 
                         return Dismissible(
@@ -141,18 +141,29 @@ class HistoryScreen extends StatelessWidget {
                                                 Colors.white.withValues(alpha: 0.5),
                                           ),
                                         ),
-                                        if (summary.isNotEmpty) ...[
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            summary,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.8),
-                                              fontStyle: FontStyle.italic,
+                                        if (aiComment.isNotEmpty) ...[
+                                          const SizedBox(height: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 8,
                                             ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.06),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              aiComment,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.8),
+                                              ),
+                                              maxLines: 3,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
                                         ],
                                       ],

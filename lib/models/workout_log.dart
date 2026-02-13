@@ -4,6 +4,7 @@ class WorkoutLog {
   final String? id;
   final String name;
   final String? summary;
+  final String? aiComment;
   final DateTime date;
   final List<SetLog> sets;
   final int? durationMinutes;
@@ -12,6 +13,7 @@ class WorkoutLog {
     this.id,
     required this.name,
     this.summary,
+    this.aiComment,
     required this.date,
     required this.sets,
     this.durationMinutes,
@@ -30,6 +32,7 @@ class WorkoutLog {
       id: json['id'] as String?,
       name: json['name'] as String,
       summary: json['summary'] as String?,
+      aiComment: json['aiComment'] as String?,
       date: DateTime.parse(json['date'] as String),
       sets: (json['sets'] as List)
           .map((e) => SetLog.fromJson(e as Map<String, dynamic>))
@@ -42,6 +45,7 @@ class WorkoutLog {
         'id': id,
         'name': name,
         'summary': summary,
+        'aiComment': aiComment,
         'date': date.toIso8601String(),
         'sets': sets.map((set) => set.toJson()).toList(),
         'durationMinutes': durationMinutes,

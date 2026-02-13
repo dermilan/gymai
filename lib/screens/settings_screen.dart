@@ -15,6 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _daysController = TextEditingController();
   final TextEditingController _equipmentController = TextEditingController();
   final TextEditingController _injuriesController = TextEditingController();
+  final TextEditingController _durationController = TextEditingController();
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -22,6 +23,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedPersona = 'Gym Bro';
   bool _obscureKey = true;
   String _status = '';
+  bool _includeWarmUp = true;
+  bool _includeCoolDown = true;
 
   @override
   void initState() {
@@ -35,10 +38,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _daysController.text = prefs.daysPerWeek.toString();
     _equipmentController.text = prefs.equipment;
     _injuriesController.text = prefs.injuries;
+    _durationController.text = prefs.sessionDurationMinutes.toString();
     _apiKeyController.text = prefs.apiKey;
     _modelController.text = prefs.model;
     _nameController.text = prefs.preferredName;
     _selectedPersona = prefs.persona;
+    _includeWarmUp = prefs.includeWarmUp;
+    _includeCoolDown = prefs.includeCoolDown;
     setState(() {});
   }
 
@@ -48,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _daysController.dispose();
     _equipmentController.dispose();
     _injuriesController.dispose();
+    _durationController.dispose();
     _apiKeyController.dispose();
     _modelController.dispose();
     _nameController.dispose();
@@ -66,6 +73,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       injuries: _injuriesController.text.trim().isEmpty
           ? 'None'
           : _injuriesController.text.trim(),
+      sessionDurationMinutes:
+          int.tryParse(_durationController.text.trim()) ?? 60,
+      includeWarmUp: _includeWarmUp,
+      includeCoolDown: _includeCoolDown,
       apiKey: _apiKeyController.text.trim(),
       model: _modelController.text.trim().isEmpty
           ? 'x-ai/grok-4.1-fast'
@@ -77,6 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     await AppServices.store.savePrefs(prefs);
+    AppServices.prefsRefresh.value++;
     setState(() => _status = 'Saved ✓');
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _status = '');
@@ -219,6 +231,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   labelText: 'Injuries / Limitations',
                   prefixIcon: Icon(Icons.healing_rounded, size: 20),
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _durationController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Session duration (min)',
+                  prefixIcon: Icon(Icons.timer_rounded, size: 20),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile.adaptive(
+                value: _includeWarmUp,
+                onChanged: (value) => setState(() => _includeWarmUp = value),
+                title: const Text('Include warm-up'),
+                contentPadding: EdgeInsets.zero,
+              ),
+              SwitchListTile.adaptive(
+                value: _includeCoolDown,
+                onChanged: (value) => setState(() => _includeCoolDown = value),
+                title: const Text('Include cool down'),
+                contentPadding: EdgeInsets.zero,
               ),
             ],
           ),

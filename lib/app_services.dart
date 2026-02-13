@@ -8,6 +8,7 @@ import 'storage/shared_prefs_store.dart';
 class AppServices {
   static final LocalStore store = SharedPrefsStore();
   static final ValueNotifier<int> workoutsRefresh = ValueNotifier(0);
+  static final ValueNotifier<int> prefsRefresh = ValueNotifier(0);
 
   static OpenRouterClient createAiClient(UserPrefs prefs) {
     return OpenRouterClient(
