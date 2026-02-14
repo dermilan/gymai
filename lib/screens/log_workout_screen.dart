@@ -5,6 +5,7 @@ import '../models/parsed_workout.dart';
 import '../models/parsed_set.dart';
 import '../models/set_log.dart';
 import '../models/workout_log.dart';
+import '../services/ocr_service.dart';
 
 class LogWorkoutScreen extends StatefulWidget {
   const LogWorkoutScreen({super.key});
@@ -63,6 +64,69 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
     } catch (error) {
       setState(() {
         _status = 'Parse failed: $error';
+      });
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _showScanOptions() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _parseImage(fromCamera: true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _parseImage(fromCamera: false);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _parseImage({required bool fromCamera}) async {
+    setState(() {
+      _loading = true;
+      _status = 'Scanning photo with AI...';
+    });
+
+    try {
+      final parsed = await OcrService.pickAndParseImage(fromCamera: fromCamera);
+      if (parsed == null) {
+        setState(() {
+          _loading = false;
+          _status = '';
+        });
+        return;
+      }
+
+      final sets = _expandParsedSets(parsed.sets);
+      setState(() {
+        _parsedSets = sets;
+        _lastParsedWorkout = parsed;
+        if (parsed.sessionDate != null) {
+          _sessionDate = parsed.sessionDate!;
+        }
+        _status = 'Parsed "${parsed.name}" from photo\n${parsed.summary ?? ""}';
+      });
+    } catch (error) {
+      setState(() {
+        _status = 'Scan failed: $error';
       });
     } finally {
       setState(() => _loading = false);
@@ -165,13 +229,26 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Paste your workout notes',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Paste your workout notes',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _loading ? null : _showScanOptions,
+                        icon: const Icon(Icons.camera_alt_rounded, size: 20),
+                        tooltip: 'Scan Photo',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        color: cs.primary,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   TextField(

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -94,6 +95,33 @@ class OpenRouterClient {
     return ParsedWorkout.fromJson(data);
   }
 
+  Future<ParsedWorkout> parseWorkoutImage(UserPrefs prefs, Uint8List imageBytes, String mimeType) async {
+    if (!_isConfigured) {
+      throw StateError('OpenRouter is not configured yet.');
+    }
+
+    final prompt = "Parse this workout image into the JSON format specified in our conversation. "
+        "Return ONLY valid JSON. "
+        "User Profile context: Goal: ${prefs.goal}, Equipment: ${prefs.equipment}. "
+        "Parse it into a ParsedWorkout structure: { \"name\": string, \"summary\": string, \"sessionDate\": ISO8601 string, \"sets\": [ { \"exerciseName\": string, \"sets\": int, \"reps\": int, \"weight\": float, \"notes\": string, \"type\": string, \"durationMinutes\": float } ] }";
+
+    final base64Image = base64Encode(imageBytes);
+    final dataUrl = 'data:$mimeType;base64,$base64Image';
+
+    final multiModalContent = [
+      {'type': 'text', 'text': prompt},
+      {
+        'type': 'image_url',
+        'image_url': {'url': dataUrl}
+      },
+    ];
+
+    final content = await _chatCompletion(multiModalContent);
+    final jsonText = _extractJsonObject(content);
+    final data = jsonDecode(jsonText) as Map<String, dynamic>;
+    return ParsedWorkout.fromJson(data);
+  }
+
   Future<String> generateSessionComment({
     required UserPrefs prefs,
     required WorkoutLog current,
@@ -110,7 +138,7 @@ class OpenRouterClient {
     return content.trim();
   }
 
-  Future<String> _chatCompletion(String prompt) async {
+  Future<String> _chatCompletion(dynamic messageContent) async {
     rateLimiter?.check();
     final uri = Uri.parse(baseUrl);
 
@@ -139,7 +167,7 @@ class OpenRouterClient {
           },
           {
             'role': 'user',
-            'content': prompt,
+            'content': messageContent,
           },
         ],
         'temperature': 0.2,
