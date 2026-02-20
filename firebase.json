@@ -1,0 +1,20 @@
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "gymai-8db8d",
+          "configurations": {
+            "android": "1:701581955889:android:320ef40b248d9762ef5610",
+            "ios": "1:701581955889:ios:e909b4b7a0175416ef5610",
+            "web": "1:701581955889:web:655cee2d6298de32ef5610"
+          }
+        }
+      }
+    }
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  }
+}

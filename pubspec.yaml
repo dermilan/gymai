@@ -1,0 +1,44 @@
+name: gym_progress_ai
+description: Gym progress tracker with AI suggestions
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  http: ^1.2.2
+  shared_preferences: ^2.3.0
+  google_fonts: ^8.0.1
+  image_picker: ^1.1.2
+  confetti: ^0.8.0
+  flutter_riverpod: ^2.5.1
+  # Firebase
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.6.0
+  cloud_functions: ^5.2.0
+  # RevenueCat
+  purchases_flutter: ^8.3.0
+  fl_chart: ^1.1.1
+  path_provider: ^2.1.5
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+  sqflite: ^2.3.0
+  sqflite_common_ffi: ^2.3.1
+  sqlite3_flutter_libs: ^0.5.21
+  path: ^1.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.8
+  freezed: ^2.4.7
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true

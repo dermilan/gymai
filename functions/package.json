@@ -1,0 +1,27 @@
+{
+  "name": "gym-ai-functions",
+  "version": "1.0.0",
+  "description": "Cloud Functions for Gym Progress AI",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.6.1",
+    "firebase-functions": "^7.0.5",
+    "stripe": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.33",
+    "typescript": "^5.3.0"
+  },
+  "private": true
+}
