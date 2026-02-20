@@ -235,6 +235,7 @@ class _AiSuggestionsScreenState extends ConsumerState<AiSuggestionsScreen> {
     final store = ref.read(storeProvider);
     final aiProxy = ref.read(aiProxyProvider);
     final prefs = await store.fetchPrefs();
+    final workouts = await store.fetchWorkouts();
 
     setState(() => _refining = true);
 
@@ -257,6 +258,7 @@ class _AiSuggestionsScreenState extends ConsumerState<AiSuggestionsScreen> {
 
       final plan = await aiProxy.refineWorkoutPlan(
         prefs: prefs,
+        recentWorkouts: workouts,
         planJson: currentPlanMap,
         feedback: feedback,
       );

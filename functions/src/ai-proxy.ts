@@ -190,7 +190,7 @@ export const generateWorkoutPlan = onCall({
     const uid = request.auth.uid;
 
     // Accept both 'prefs' and 'preferences' for compatibility
-    const { recentWorkouts, prefs, preferences } = request.data || {};
+    const { recentWorkouts, prefs, preferences, currentPlan, feedback } = request.data || {};
     const userPrefs = prefs || preferences || {};
 
     // Check usage limits
@@ -230,11 +230,16 @@ export const generateWorkoutPlan = onCall({
   ]
 }
 Type can be "strength", "cardio", or "flexibility".
+If currentPlan and feedback are provided, revise the plan instead of creating a new one. Keep the overall structure and only adjust what the feedback asks for.
+If the same exercise appears with different weights (e.g., warm-up sets, myo), include multiple entries with the same exerciseName and different weight values. Do not merge them.
 For cardio exercises (rowing, running, cycling, etc.), use durationMinutes instead of sets/reps (set sets to 1, reps to 0, weight to 0).`;
 
+    const actionLine = currentPlan
+      ? "Revise the current plan based on the feedback."
+      : "Generate a workout plan for today.";
     const userPrompt = `Recent workouts: ${JSON.stringify(recentWorkouts || [])}
 Preferences: ${JSON.stringify(userPrefs)}
-Generate a workout plan for today.`;
+${currentPlan ? `Current plan: ${JSON.stringify(currentPlan)}\n` : ''}${feedback ? `Feedback: ${feedback}\n` : ''}${actionLine}`;
 
     let result: string;
     try {

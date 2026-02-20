@@ -1,6 +1,8 @@
 # Miscellaneous
 .class
 .log
+*.log
+firebase-debug.log
 .lock
 *.lock
 .DS_Store

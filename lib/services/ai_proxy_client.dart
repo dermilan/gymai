@@ -52,6 +52,7 @@ class AiProxyClient {
 
   Future<String> refineWorkoutPlan({
     required UserPrefs prefs,
+    required List<Workout> recentWorkouts,
     required Map<String, dynamic> planJson,
     required String feedback,
   }) async {
@@ -72,7 +73,16 @@ class AiProxyClient {
           'persona': prefs.persona,
           'preferredName': prefs.preferredName,
         },
-        'recentWorkouts': [],
+        'recentWorkouts': recentWorkouts.map((w) => {
+          'date': w.date.toIso8601String(),
+          'name': w.name,
+          'exercises': w.exercises.map((e) => {
+            'exerciseName': e.exerciseName,
+            'reps': e.reps,
+            'weight': e.weight,
+            'notes': e.notes,
+          }).toList(),
+        }).toList(),
         'currentPlan': planJson,
         'feedback': feedback,
       });
